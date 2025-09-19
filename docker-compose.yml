@@ -1,0 +1,87 @@
+version: '3.8'
+
+services:
+  # Next.js Application
+  # app:
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile.dev
+  #   ports:
+  #     - "3000:3000"
+  #   volumes:
+  #     - .:/app
+  #     - /app/node_modules
+  #     - /app/.next
+  #   environment:
+  #     - NODE_ENV=development
+  #     - NEXT_PUBLIC_SITE_URL=http://localhost:3000
+  #     - MONGODB_URI=mongodb://mongodb:27017/volkovchain
+  #     - YOUTUBE_API_KEY=${YOUTUBE_API_KEY:-}
+  #     - YOUTUBE_CHANNEL_ID=${YOUTUBE_CHANNEL_ID:-}
+  #     - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY:-}
+  #     - STRIPE_PUBLISHABLE_KEY=${STRIPE_PUBLISHABLE_KEY:-}
+  #   depends_on:
+  #     - mongodb
+  #   networks:
+  #     - volkovchain-network
+  #   restart: unless-stopped
+  #   stdin_open: true
+  #   tty: true
+
+  # MongoDB Database
+  mongodb:
+    image: mongo:7.0
+    container_name: volkovchain-mongodb
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+      - ./docker/mongodb/init:/docker-entrypoint-initdb.d
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=admin
+      - MONGO_INITDB_ROOT_PASSWORD=adminpassword
+      - MONGO_INITDB_DATABASE=volkovchain
+    networks:
+      - volkovchain-network
+    restart: unless-stopped
+
+  # MongoDB Express (Web-based MongoDB admin interface)
+  mongo-express:
+    image: mongo-express:1.0.2
+    container_name: volkovchain-mongo-express
+    ports:
+      - "8081:8081"
+    environment:
+      - ME_CONFIG_MONGODB_ADMINUSERNAME=admin
+      - ME_CONFIG_MONGODB_ADMINPASSWORD=adminpassword
+      - ME_CONFIG_MONGODB_URL=mongodb://admin:adminpassword@mongodb:27017/
+      - ME_CONFIG_BASICAUTH_USERNAME=admin
+      - ME_CONFIG_BASICAUTH_PASSWORD=admin
+    depends_on:
+      - mongodb
+    networks:
+      - volkovchain-network
+    restart: unless-stopped
+
+  # Redis (for caching and session storage)
+  redis:
+    image: redis:7.2-alpine
+    container_name: volkovchain-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    networks:
+      - volkovchain-network
+    restart: unless-stopped
+
+volumes:
+  mongodb_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  volkovchain-network:
+    driver: bridge

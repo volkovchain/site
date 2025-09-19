@@ -1,0 +1,30 @@
+# Development Dockerfile for hot reloading
+FROM node:23.6.0
+
+# Install dependencies for native modules and build tools
+RUN apt-get update && apt-get install -y \
+    python3 \
+    make \
+    g++ \
+    gcc \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Copy package files
+COPY package.json package-lock.json* ./
+
+# Install dependencies
+RUN npm install --legacy-peer-deps
+
+# Rebuild native dependencies for current architecture
+RUN npm rebuild lightningcss || npm install lightningcss --force
+
+# Copy source code
+COPY . .
+
+# Expose the port
+EXPOSE 3000
+
+# Start the development server
+CMD ["npm", "run", "dev"]

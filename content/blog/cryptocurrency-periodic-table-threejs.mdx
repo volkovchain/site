@@ -1,0 +1,248 @@
+---
+title: "Building a Cryptocurrency Periodic Table with Three.js"
+description: "Learn how to create an interactive 3D visualization of cryptocurrencies using Three.js and React, implementing a unique periodic table approach to digital assets."
+publishedAt: "2024-01-15"
+author: "Nikita Volkov"
+category: "Web Development"
+tags: ["Three.js", "React", "Cryptocurrency", "3D Visualization", "WebGL"]
+featured: true
+coverImage: "/images/blog/crypto-periodic-table.jpg"
+---
+
+# Building a Cryptocurrency Periodic Table with Three.js
+
+The world of cryptocurrencies has grown exponentially, making it challenging to visualize and understand the relationships between different digital assets. In this article, we'll explore how to build an interactive 3D periodic table of cryptocurrencies using Three.js and React.
+
+## The Vision
+
+Traditional periodic tables organize chemical elements based on their atomic structure and properties. Similarly, we can organize cryptocurrencies based on their:
+
+- **Market capitalization**
+- **Consensus mechanisms**
+- **Use cases**
+- **Technology categories**
+
+<Callout type="info">
+This project demonstrates how data visualization can make complex information more accessible and engaging.
+</Callout>
+
+## Technical Stack
+
+Our implementation uses the following technologies:
+
+- **Three.js** - 3D graphics library
+- **React Three Fiber** - React renderer for Three.js
+- **React Three Drei** - Useful helpers for R3F
+- **Next.js 14** - React framework with App Router
+- **TypeScript** - Type safety and better DX
+
+## Core Architecture
+
+### 1. Data Structure
+
+First, we define our cryptocurrency data structure:
+
+```typescript
+export interface PeriodicElement {
+  symbol: string
+  name: string
+  atomicNumber: number
+  category: ElementCategory
+  color: string
+  description: string
+  website?: string
+  marketCap?: number
+  consensus?: string
+  yearCreated?: number
+}
+
+export type ElementCategory = 
+  | 'payment-coin'
+  | 'smart-contract'
+  | 'defi-token'
+  | 'privacy-coin'
+  | 'stablecoin'
+  | 'personal-brand'
+```
+
+### 2. 3D Scene Setup
+
+The 3D scene is built using React Three Fiber:
+
+```tsx
+function PeriodicTable3D() {
+  return (
+    <Canvas
+      camera={{ position: [0, 0, 20], fov: 75 }}
+      style={{ height: '100vh' }}
+    >
+      <ambientLight intensity={0.5} />
+      <pointLight position={[10, 10, 10]} />
+      <OrbitControls enablePan={true} enableZoom={true} />
+      <ElementGrid />
+    </Canvas>
+  )
+}
+```
+
+### 3. Interactive Elements
+
+Each cryptocurrency is represented as a 3D cube with hover interactions:
+
+```tsx
+function ElementCard({ element, position }: ElementCardProps) {
+  const meshRef = useRef<THREE.Mesh>(null)
+  const [hovered, setHovered] = useState(false)
+
+  useFrame((state) => {
+    if (meshRef.current) {
+      meshRef.current.rotation.y = hovered ? 
+        Math.sin(state.clock.elapsedTime) * 0.2 : 0
+    }
+  })
+
+  return (
+    <mesh
+      ref={meshRef}
+      position={position}
+      onPointerOver={() => setHovered(true)}
+      onPointerOut={() => setHovered(false)}
+    >
+      <boxGeometry args={[1, 1, 1]} />
+      <meshStandardMaterial color={element.color} />
+    </mesh>
+  )
+}
+```
+
+## Mobile Optimization
+
+Mobile devices require special consideration for 3D scenes:
+
+```typescript
+const [isMobile, setIsMobile] = useState(false)
+
+useEffect(() => {
+  const checkMobile = () => {
+    setIsMobile(window.innerWidth < 768)
+  }
+  
+  checkMobile()
+  window.addEventListener('resize', checkMobile)
+  
+  return () => window.removeEventListener('resize', checkMobile)
+}, [])
+
+// Adjust camera and controls for mobile
+const cameraPosition: [number, number, number] = isMobile 
+  ? [0, 0, 30] 
+  : [0, 0, 20]
+```
+
+## Performance Considerations
+
+For optimal performance, especially on mobile devices:
+
+1. **Level of Detail (LOD)** - Reduce geometry complexity at distance
+2. **Frustum Culling** - Only render visible objects
+3. **Instance Rendering** - For repeated geometries
+4. **Texture Optimization** - Use compressed formats
+
+```typescript
+// Example LOD implementation
+const lod = useMemo(() => {
+  const lodObject = new THREE.LOD()
+  
+  // High detail (close)
+  lodObject.addLevel(highDetailMesh, 0)
+  
+  // Medium detail
+  lodObject.addLevel(mediumDetailMesh, 10)
+  
+  // Low detail (far)
+  lodObject.addLevel(lowDetailMesh, 20)
+  
+  return lodObject
+}, [])
+```
+
+## User Experience Features
+
+### Search and Filtering
+
+Users can search and filter cryptocurrencies by various criteria:
+
+```typescript
+const filteredElements = useMemo(() => {
+  return periodicElements.filter(element => {
+    const matchesSearch = element.name
+      .toLowerCase()
+      .includes(searchTerm.toLowerCase())
+    
+    const matchesCategory = selectedCategory === 'all' || 
+      element.category === selectedCategory
+    
+    return matchesSearch && matchesCategory
+  })
+}, [searchTerm, selectedCategory])
+```
+
+### Detailed Information Modal
+
+Clicking on an element opens a detailed modal with comprehensive information:
+
+- Market data and statistics
+- Technology overview
+- Historical information
+- External links and resources
+
+## Challenges and Solutions
+
+### 1. Performance on Low-End Devices
+
+**Challenge**: 3D scenes can be resource-intensive on older mobile devices.
+
+**Solution**: Implement adaptive quality settings based on device capabilities.
+
+### 2. Touch Controls
+
+**Challenge**: Traditional mouse-based controls don't work well on touch devices.
+
+**Solution**: Custom touch gesture handling for orbit, zoom, and selection.
+
+### 3. Data Management
+
+**Challenge**: Keeping cryptocurrency data current and accurate.
+
+**Solution**: Modular data structure with easy update mechanism and API integration possibilities.
+
+## Future Enhancements
+
+Several exciting features could enhance this visualization:
+
+1. **Real-time Market Data** - Live price and market cap updates
+2. **Historical Visualization** - Animate changes over time
+3. **Network Connections** - Show relationships between cryptocurrencies
+4. **AR/VR Support** - Immersive viewing experiences
+5. **Educational Mode** - Guided tours and explanations
+
+## Conclusion
+
+Building a 3D cryptocurrency periodic table demonstrates how creative data visualization can make complex information more accessible. The combination of Three.js and React provides a powerful platform for creating engaging, interactive experiences.
+
+The key to success lies in balancing visual appeal with performance, ensuring the experience works well across all devices while providing meaningful insights into the cryptocurrency ecosystem.
+
+<Callout type="success">
+You can explore the live implementation at [volkovchain.dev](https://volkovchain.dev) and find the complete source code on GitHub.
+</Callout>
+
+## Resources
+
+- [Three.js Documentation](https://threejs.org/docs/)
+- [React Three Fiber](https://docs.pmnd.rs/react-three-fiber)
+- [WebGL Fundamentals](https://webglfundamentals.org/)
+- [CoinGecko API](https://www.coingecko.com/en/api) for market data
+
+---
+
+*Have questions about 3D web development or cryptocurrency visualization? Feel free to reach out through the [consulting page](/consulting) for personalized guidance.*
